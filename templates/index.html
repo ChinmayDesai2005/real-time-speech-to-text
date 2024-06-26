@@ -1,0 +1,73 @@
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap');
+    body{
+        font-family: 'Noto Sans', sans-serif;
+        background: #272727;
+        color: white;
+    }
+</style>
+<!DOCTYPE html>
+<html>
+
+   <head>
+       <title>Live Transcription</title>
+   </head>
+   <!-- <script src="https://cdn.jsdelivr.net/npm/extendable-media-recorder@9.2.4/build/es5/bundle.min.js"></script>    -->
+        <script>
+        var constraints = { audio: true };
+        navigator.mediaDevices.getUserMedia(constraints).then(function(mediaStream) {
+            var mediaRecorder = new MediaRecorder(mediaStream);
+            const socket = new WebSocket('wss://livestt-oz7g73732a-el.a.run.app/listen')
+            var chunks = [];
+
+            mediaRecorder.onstart = function(e) {
+                chunks = [];
+            };
+            mediaRecorder.ondataavailable = function(e) {
+                console.log(e.data)
+                chunks.push(e.data);
+            };
+            socket.onopen = () => {
+                console.log(MediaRecorder.isTypeSupported("audio/mp3"))
+                console.log("Connected Sucessfully")
+                document.querySelector('#status').textContent = 'Connected'
+                mediaRecorder.addEventListener('stop', async (event) => {
+                    if (socket.readyState == 1) {
+                        console.log(chunks)
+                        var blob = new Blob(chunks, { 'type' : 'audio/webm;codecs=opus' });
+                        console.log(blob)
+                        socket.send(blob)
+                    }
+                }); 
+            }
+
+            // Start recording
+            mediaRecorder.start();
+
+            // Stop recording after 5 seconds and broadcast it to server
+            setInterval(function() {
+                mediaRecorder.stop()
+                chunks = [];
+                mediaRecorder.start()
+            }, 2000);
+
+            socket.onmessage = (message) => {
+                const received = message.data
+                if (received) {
+                    document.querySelector('#transcript').textContent +=  ' ' + message.data
+                    
+
+                }
+
+            }
+        });
+
+        </script>
+   <body>
+        <h1>Live Transription</h1>
+        <p id="status">Connection status will go here</p>
+        <p id="transcript"></p>
+
+   
+   </body>
+</html>

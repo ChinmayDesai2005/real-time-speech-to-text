@@ -1,0 +1,6 @@
+flask
+python-dotenv
+google-cloud-speech
+aiohttp
+aiohttp-wsgi
+pydub
